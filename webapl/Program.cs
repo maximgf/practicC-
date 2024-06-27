@@ -2,56 +2,62 @@ using System.IO;
 using System.Text.Json;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.EntityFrameworkCore;
-//using JwtUserAuth;
-//using JwtUserAuth.Types;
+using JwtUserAuth;
+using JwtUserAuth.Types;
+using System.Security.Claims;
+using JwtUserAuth.Attributes;
+
 
 
 
 var builder = WebApplication.CreateBuilder();
+builder.Services.AddAntiforgery(options => { options.SuppressXFrameOptionsHeader = true; }); 
+builder.AddJwtAuth<User>();
 string? connection = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlite(connection));
 
-var app = builder.Build();
 
+var app = builder.Build();
+app.UseAntiforgery();
+app.UseJwtAuth<User>();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapPost("/", async (HttpRequest request, ApplicationContext dbContext) =>
+
+app.MapPost("/", async (float longitude, float latitude, IFormFileCollection? files, User user, ApplicationContext dbContext) =>
 {
     // AddedBy
-    string head = request.Headers["Authorization"].ToString();
-    if (head is null) throw new ArgumentNullException(nameof(head));
-    string userID = JWTtoID(head);
-
+    var userID = user.Id;
+    Console.WriteLine(userID);
     // PlaceID
     var placeID = Guid.NewGuid();
-    
+
+    //Сoordinates
+    var Longitude = longitude;
+    var Latitude = latitude;
+
     var place = new Place
     {
         ID = placeID,
-        AddedBy = long.Parse(userID),
+        AddedBy = userID,
         AddedAt = DateTime.UtcNow,
-        Photos = new List<PlacePhoto>(),
-        Tags = new FeatureTag[] { FeatureTag.Tag1 }, // Provide a default value for Tags
+        Photos = [],
+        Tags = [ FeatureTag.Tag1 ], // Provide a default value for Tags
         Verified = false, // Provide a default value for Verified
-        Longitude = 10.0f,
-        Latitude = 10.0f,
+        Longitude = longitude,
+        Latitude = latitude,
     };
-    
+
     // Photos save
     var photosPath = Path.Combine(Directory.GetCurrentDirectory(), "Photos");
-    if (!Directory.Exists(photosPath))
-    {
-        Directory.CreateDirectory(photosPath);
-    }
 
     var folderPath = Path.Combine(photosPath, placeID.ToString());
     Directory.CreateDirectory(folderPath);
-
-    foreach (var file in request.Form.Files)
+    if (files != null || files.Count() > 0)
     {
-        if (file.Length > 0)
+        foreach (var file in files)
         {
+            if (file.Length == 0) continue;
             var fileName = Guid.NewGuid().ToString();
             var filePath = Path.Combine(folderPath, fileName + Path.GetExtension(file.FileName));
 
@@ -64,31 +70,33 @@ app.MapPost("/", async (HttpRequest request, ApplicationContext dbContext) =>
             {
                 Id = Guid.NewGuid(),
                 AddedAt = DateTime.UtcNow,
-                AddedBy = long.Parse(userID),
+                AddedBy = userID,
                 PlaceId = placeID
             };
-            dbContext.PlacePhotos.Add(photo);
+            await dbContext.PlacePhotos.AddAsync(photo);
             place.Photos.Add(photo);
         }
     }
-    
-    dbContext.Places.Add(place);
+    await dbContext.Places.AddAsync(place);
     await dbContext.SaveChangesAsync();
+    
+    return Results.Ok(new
+    {
+        Message = "Place added successfully",
+        Object = place
+    });
+}).RequireAuthorization().DisableAntiforgery();
 
-    return Results.Ok(new { message = "Photos uploaded successfully" });
-});
+app.MapGet("/", async (Guid ID,ApplicationContext dbContext)=>
+    {
+        var entity = await dbContext.Places.FindAsync(ID);
+        if (entity == null)
+        {
+            return Results.NotFound(); // Возвращает статус 404, если объект не найден
+        }
+        return Results.Ok(entity); // Возвращает объект с соответствующим статусом 200
+    });
 
-string JWTtoID(string head)
-{
-    var token = head.Substring("Bearer ".Length).Trim();
-    var handler = new JwtSecurityTokenHandler();
-    var jsonToken = handler.ReadToken(token) as JwtSecurityToken;
-
-    if (jsonToken is null) throw new ArgumentNullException(nameof(jsonToken));
-
-    string id = jsonToken.Claims.First(claim => claim.Type == "sub").Value;
-    return id;
-}
 
 app.Run();
 
@@ -110,6 +118,7 @@ public class ApplicationContext : DbContext
             optionsBuilder.UseSqlite("Data Source=PlaceDB/place.db");
         }
     }
+ 
 
 }
 
@@ -140,10 +149,22 @@ public enum FeatureTag
     Tag3
 }
 
+public class User : JwtUser
+{
+    [JwtClaim("firstname")]
+    public string? FirstName{get;set;}
+    
+    [JwtClaim("lastname")]
+    public string? LastName{get;set;}
+    
+    [JwtClaim(ClaimTypes.Name)]
+    public string? Username{get;set;}
+    
+    [JwtClaim("id")]
+    public long Id{get;set;}
+    
+    [JwtClaim("photourl")]
+    public string? PhotoUrl{get;set;}
+}
 
 
-
-
-
-
-//public class User:JwtUser;
