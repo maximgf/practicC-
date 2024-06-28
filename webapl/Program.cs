@@ -67,7 +67,7 @@ app.MapGet("/", async (Guid ID,ApplicationContext dbContext)=>
         return Results.Ok(entity); // Возвращает объект с соответствующим статусом 200
     });
 
-app.MapGet("/get", async (float latitude, float longitude, float radius, ApplicationContext dbContext) =>
+app.MapGet("/get", async (float latitude, float longitude, float radius,int count, ApplicationContext dbContext) =>
 {
     // Вычисление расстояния между двумя точками на сфере (в километрах)
     double R = 6371; // радиус Земли в метрах
@@ -93,7 +93,7 @@ app.MapGet("/get", async (float latitude, float longitude, float radius, Applica
         var distance = R * c;
 
         return distance <= radius;
-    }).ToList();
+    }).Take(count).ToList();
 
     return Results.Ok(placesInRadius);
 });
