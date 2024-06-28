@@ -24,7 +24,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 
-public async Task<User> GetUser(Guid id)
+async Task<User> GetUser(Guid id)
 {
     using var http = new HttpClient();
 
@@ -38,7 +38,7 @@ public async Task<User> GetUser(Guid id)
 app.MapPost("/add", async (float longitude, float latitude, User user,FeatureTag[] tags, ApplicationContext dbContext) =>
 {
     var userID = user.Id;
-    Console.WriteLine(userID);
+    
     var placeID = Guid.NewGuid();
 
     var place = new Place
@@ -84,7 +84,7 @@ app.MapGet("/", async (Guid ID, ApplicationContext dbContext) =>
 app.MapGet("/get", async (float latitude, float longitude, float radius, int count, ApplicationContext dbContext) =>
 {
     var places = await dbContext.Places.ToListAsync();
-
+    float R = 6371F;
     var placesInRadius = places.Where(place =>
     {
         var pointLat = latitude;
