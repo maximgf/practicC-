@@ -35,7 +35,7 @@ public async Task<User> GetUser(Guid id)
 
 
 
-app.MapPost("/add", async (float longitude, float latitude, User user, ApplicationContext dbContext) =>
+app.MapPost("/add", async (float longitude, float latitude, User user,FeatureTag[] tags, ApplicationContext dbContext) =>
 {
     var userID = user.Id;
     Console.WriteLine(userID);
@@ -46,7 +46,7 @@ app.MapPost("/add", async (float longitude, float latitude, User user, Applicati
         ID = placeID,
         AddedBy = userID,
         AddedAt = DateTime.UtcNow,
-        Tags = [ FeatureTag.Tag1 ],
+        Tags = tags,
         Verified = false,
         Longitude = longitude,
         Latitude = latitude,
@@ -163,9 +163,17 @@ public class Place
 
 public enum FeatureTag
 {
-    Tag1,
-    Tag2,
-    Tag3
+    DrinkingWater,
+    MobileCommunication ,
+    CampfireSite,
+    Toilet,
+    Shore,
+    Fishing,
+    Bike,
+    Paid,
+    Sand,
+    Stone,
+    Ground
 }
 
 public class User : JwtUser
