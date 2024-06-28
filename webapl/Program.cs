@@ -55,13 +55,12 @@ app.MapPost("/add", async (float longitude, float latitude, User user, Applicati
     await dbContext.Places.AddAsync(place);
     await dbContext.SaveChangesAsync();
 
-    var addedUser = await GetUser(userID);
+    var user = await GetUser(userID);
 
     return Results.Ok(new
     {
         Message = "Place added successfully",
-        Object = place,
-        User = addedUser
+        Object = place, user
     });
 }).RequireAuthorization().DisableAntiforgery();
 
@@ -78,8 +77,7 @@ app.MapGet("/", async (Guid ID, ApplicationContext dbContext) =>
 
     return Results.Ok(new
     {
-        Place = entity,
-        User = user
+        Place = entity,user
     });
 });
 
@@ -105,18 +103,25 @@ app.MapGet("/get", async (float latitude, float longitude, float radius, int cou
         return distance <= radius;
     }).Take(count).ToList();
 
-    var users = new List<User>();
+    var result = new List<object>();
     foreach (var place in placesInRadius)
     {
         var user = await GetUser(place.AddedBy);
-        users.Add(user);
+        result.Add(new
+        {
+            place = place,
+            author = user
+        });
     }
 
     return Results.Ok(new
     {
-        Places = placesInRadius,
-        Users = users
+        message = "ok",
+        places = result
     });
+
+
+
 });
 
 
