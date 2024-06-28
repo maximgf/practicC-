@@ -24,7 +24,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 
-app.MapPost("/", async (float longitude, float latitude, IFormFileCollection? files, User user, ApplicationContext dbContext) =>
+app.MapPost("/add", async (float longitude, float latitude, IFormFileCollection? files, User user, ApplicationContext dbContext) =>
 {
     // AddedBy
     var userID = user.Id;
@@ -97,6 +97,37 @@ app.MapGet("/", async (Guid ID,ApplicationContext dbContext)=>
         return Results.Ok(entity); // Возвращает объект с соответствующим статусом 200
     });
 
+app.MapGet("/get", async (float latitude, float longitude, float radius, ApplicationContext dbContext) =>
+{
+    // Вычисление расстояния между двумя точками на сфере (в километрах)
+    double R = 6371; // радиус Земли в километрах
+
+    // Получаем все места из базы данных
+    var places = await dbContext.Places.ToListAsync();
+
+    // Фильтруем места, находящиеся в пределах заданного радиуса(радиус в км)
+    var placesInRadius = places.Where(place =>
+    {
+        //
+        var pointLat =  latitude;
+        var pointLon =  longitude;
+        var placeLat = place.Latitude;
+        var placeLon = place.Longitude;
+
+        var deltaLat = (pointLat - placeLat)*Math.PI / 180;
+        var deltaLong = (pointLon - placeLon)*Math.PI / 180;
+
+        var a = Math.Sin(deltaLat/2)*Math.Sin(deltaLat/2) + Math.Cos(pointLat*Math.PI / 180)*Math.Cos(placeLat*Math.PI / 180)*Math.Sin(deltaLong/2)*Math.Sin(deltaLong/2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a),Math.Sqrt(1-a));
+
+        var distance = R * c;
+
+        return distance <= radius;
+    }).ToList();
+
+    return Results.Ok(placesInRadius);
+});
+
 
 app.Run();
 
@@ -166,5 +197,3 @@ public class User : JwtUser
     [JwtClaim("photourl")]
     public string? PhotoUrl{get;set;}
 }
-
-
