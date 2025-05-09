@@ -1,9 +1,25 @@
+/// <summary>
+/// Service for handling geographical calculations.
+/// </summary>
+/// <remarks>
+/// This service provides methods for working with geographical coordinates,
+/// including distance calculations and location-based queries.
+/// </remarks>
 using WebApi.Models.Entities;
 
 public class GeoService
 {
     private const float EarthRadiusKm = 6371f;
 
+    /// <summary>
+    /// Filters places within a specified radius from a center point.
+    /// </summary>
+    /// <param name="places">The list of places to filter.</param>
+    /// <param name="centerLat">Latitude of the center point.</param>
+    /// <param name="centerLon">Longitude of the center point.</param>
+    /// <param name="radiusKm">Search radius in kilometers.</param>
+    /// <param name="maxCount">Maximum number of places to return.</param>
+    /// <returns>List of places within the specified radius.</returns>
     public List<Place> GetPlacesWithinRadius(
         List<Place> places, 
         float centerLat, 
@@ -17,6 +33,14 @@ public class GeoService
             .ToList();
     }
 
+    /// <summary>
+    /// Calculates the distance between two geographical points using the Haversine formula.
+    /// </summary>
+    /// <param name="lat1">Latitude of point 1.</param>
+    /// <param name="lon1">Longitude of point 1.</param>
+    /// <param name="lat2">Latitude of point 2.</param>
+    /// <param name="lon2">Longitude of point 2.</param>
+    /// <returns>Distance between the points in kilometers.</returns>
     private double CalculateDistance(float lat1, float lon1, float lat2, float lon2)
     {
         var dLat = (lat2 - lat1) * Math.PI / 180;

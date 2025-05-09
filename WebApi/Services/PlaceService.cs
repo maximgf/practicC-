@@ -1,3 +1,11 @@
+/// <summary>
+/// Service for handling place-related operations.
+/// </summary>
+/// <remarks>
+/// This service manages all business logic related to places,
+/// including creation, retrieval, and geographical queries.
+/// It coordinates between the database, geo service, and user service.
+/// </remarks>
 using WebApi.Data;
 using WebApi.Models.Entities;
 using WebApi.Models.DTOs.Requests;
@@ -9,6 +17,12 @@ public class PlaceService
     private readonly GeoService _geoService;
     private readonly UserService _userService;
 
+    /// <summary>
+    /// Initializes a new instance of the PlaceService.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="geoService">The geo service for location calculations.</param>
+    /// <param name="userService">The service for user-related operations.</param>
     public PlaceService(
         ApplicationContext db, 
         GeoService geoService,
@@ -19,6 +33,11 @@ public class PlaceService
         _userService = userService;
     }
 
+    /// <summary>
+    /// Adds a new place to the system.
+    /// </summary>
+    /// <param name="request">The place creation request.</param>
+    /// <returns>A response containing the created place and author information.</returns>
     public async Task<PlaceResponse> AddPlace(PlaceRequest request)
     {
         var place = new Place
@@ -45,6 +64,11 @@ public class PlaceService
         };
     }
 
+    /// <summary>
+    /// Retrieves a place by its ID.
+    /// </summary>
+    /// <param name="id">The unique identifier of the place.</param>
+    /// <returns>The place with author information, or null if not found.</returns>
     public async Task<PlaceWithAuthorResponse?> GetPlace(Guid id)
     {
         var place = await _db.Places.FindAsync(id);
@@ -54,6 +78,11 @@ public class PlaceService
         return new PlaceWithAuthorResponse(place, user);
     }
 
+    /// <summary>
+    /// Retrieves places near a specified location.
+    /// </summary>
+    /// <param name="request">The nearby places request parameters.</param>
+    /// <returns>A response containing nearby places with their authors.</returns>
     public async Task<NearbyPlacesResponse> GetNearbyPlaces(NearbyPlacesRequest request)
     {
         var places = await _db.Places.ToListAsync();
